@@ -1,0 +1,63 @@
+# Ignore compiled object files & libraries
+*.o
+*.obj
+*.lo
+*.la
+*.al
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# Ignore executable binaries
+*.exe
+*.out
+*.app
+*.bin
+*.run
+*.wasm
+
+# JVM / .NET
+*.class
+*.jar
+*.war
+*.ear
+*.il
+*.dll.config
+*.pdb
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Go build cache & binaries
+*.test
+*.cover
+*.exe~
+/bin/
+/cmd/*/bin/
+
+# Rust / Cargo
+/target/
+
+# JavaScript / TypeScript build outputs
+/node_modules/
+/dist/
+/build/
+/out/
+
+# C/C++ / general build dirs
+/build/
+/Debug/
+/Release/
+/cmake-build-*/
+
+# Logs & misc
+*.log
+
+# macOS
+.DS_Store
+
+# Remove already tracked executables with:
+# git rm --cached path/to/file && git commit -m "Remove binary" && git push
