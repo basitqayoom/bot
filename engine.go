@@ -53,7 +53,7 @@ const (
 
 	// Performance Configuration
 	ENABLE_PARALLEL_MODE = true  // Use goroutines for parallel processing (3-4x faster)
-	NUM_WORKERS          = 4     // Number of concurrent workers for batch processing
+	NUM_WORKERS          = 8     // Number of concurrent workers for batch processing
 	ENABLE_MULTI_SYMBOL  = false // Enable concurrent multi-symbol analysis
 )
 
