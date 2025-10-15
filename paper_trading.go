@@ -195,14 +195,31 @@ func (p *PaperTradingEngine) CloseTrade(exitPrice float64, reason string) {
 
 func (p *PaperTradingEngine) PrintStats() {
 	totalTrades := len(p.Trades)
+	totalPL := p.CurrentBalance - p.StartingBalance
+	totalPLPct := (totalPL / p.StartingBalance) * 100
+
+	// Always show current portfolio balance
+	fmt.Println("\n╔════════════════════════════════════════╗")
+	fmt.Println("║      PORTFOLIO SUMMARY                 ║")
+	fmt.Println("╚════════════════════════════════════════╝")
+	fmt.Printf("\n💰 Starting Balance: $%.2f\n", p.StartingBalance)
+	fmt.Printf("💰 Current Balance:  $%.2f", p.CurrentBalance)
+
+	if totalPL > 0 {
+		fmt.Printf(" (+$%.2f, +%.2f%%) ✅\n", totalPL, totalPLPct)
+	} else if totalPL < 0 {
+		fmt.Printf(" (-$%.2f, %.2f%%) ❌\n", -totalPL, totalPLPct)
+	} else {
+		fmt.Printf("\n")
+	}
+
 	if totalTrades == 0 {
 		fmt.Println("\n📊 No trades executed yet")
+		fmt.Println("════════════════════════════════════════")
 		return
 	}
 
 	winRate := (float64(p.WinCount) / float64(totalTrades)) * 100
-	totalPL := p.CurrentBalance - p.StartingBalance
-	totalPLPct := (totalPL / p.StartingBalance) * 100
 
 	avgWin := 0.0
 	if p.WinCount > 0 {
@@ -219,20 +236,10 @@ func (p *PaperTradingEngine) PrintStats() {
 		profitFactor = p.TotalProfit / -p.TotalLoss
 	}
 
-	fmt.Println("\n╔════════════════════════════════════════╗")
-	fmt.Println("║      PAPER TRADING STATISTICS          ║")
-	fmt.Println("╚════════════════════════════════════════╝")
+	// Trading statistics
 	fmt.Printf("\n📊 Total Trades: %d\n", totalTrades)
 	fmt.Printf("✅ Wins: %d (%.1f%%)\n", p.WinCount, winRate)
 	fmt.Printf("❌ Losses: %d (%.1f%%)\n", p.LossCount, 100-winRate)
-	fmt.Printf("\n💰 Starting Balance: $%.2f\n", p.StartingBalance)
-	fmt.Printf("💰 Current Balance:  $%.2f\n", p.CurrentBalance)
-
-	if totalPL > 0 {
-		fmt.Printf("💰 Total P/L:        +$%.2f (+%.2f%%) ✅\n", totalPL, totalPLPct)
-	} else {
-		fmt.Printf("💰 Total P/L:        -$%.2f (%.2f%%) ❌\n", -totalPL, totalPLPct)
-	}
 
 	fmt.Printf("\n📈 Average Win:  +$%.2f\n", avgWin)
 	fmt.Printf("📉 Average Loss: -$%.2f\n", -avgLoss)
@@ -317,6 +324,19 @@ func (p *PaperTradingEngine) RunPaperTrading() error {
 
 		currentPrice := p.Candles[len(p.Candles)-1].Close
 		currentRSI := p.RSI[len(p.RSI)-1]
+
+		// Show current portfolio status
+		totalPL := p.CurrentBalance - p.StartingBalance
+		totalPLPct := (totalPL / p.StartingBalance) * 100
+		fmt.Println("\n┌────────────────────────────────────────┐")
+		if totalPL > 0 {
+			fmt.Printf("│ 💼 PORTFOLIO: $%.2f (+%.2f%%) ✅    │\n", p.CurrentBalance, totalPLPct)
+		} else if totalPL < 0 {
+			fmt.Printf("│ 💼 PORTFOLIO: $%.2f (%.2f%%) ❌    │\n", p.CurrentBalance, totalPLPct)
+		} else {
+			fmt.Printf("│ 💼 PORTFOLIO: $%.2f                    │\n", p.CurrentBalance)
+		}
+		fmt.Println("└────────────────────────────────────────┘")
 
 		if p.ActiveTrade != nil {
 			p.CheckAndClosePosition(currentPrice)
