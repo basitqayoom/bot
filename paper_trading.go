@@ -10,6 +10,7 @@ import (
 type PaperTrade struct {
 	ID            int
 	Symbol        string
+	Interval      string
 	Side          string
 	EntryPrice    float64
 	EntryTime     time.Time
@@ -66,6 +67,7 @@ func (p *PaperTradingEngine) OpenTrade(side string, entryPrice, stopLoss, takePr
 	trade := PaperTrade{
 		ID:         p.TradeCounter,
 		Symbol:     p.Symbol,
+		Interval:   p.Interval,
 		Side:       side,
 		EntryPrice: entryPrice,
 		EntryTime:  time.Now(),

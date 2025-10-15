@@ -213,7 +213,7 @@ func RunMultiSymbolAnalysis(symbols []string, interval string, limit int) []Mult
 	if VERBOSE_MODE {
 		fmt.Println("Progress:")
 	}
-	
+
 	for result := range resultsChan {
 		results = append(results, result)
 		completed++

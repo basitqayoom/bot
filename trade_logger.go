@@ -45,6 +45,7 @@ func NewTradeLogger(symbol string) (*TradeLogger, error) {
 		headers := []string{
 			"Trade_ID",
 			"Symbol",
+			"Interval",
 			"Side",
 			"Entry_Time",
 			"Entry_Price",
@@ -109,6 +110,7 @@ func NewMultiTradeLogger() (*TradeLogger, error) {
 		headers := []string{
 			"Trade_ID",
 			"Symbol",
+			"Interval",
 			"Side",
 			"Entry_Time",
 			"Entry_Price",
@@ -154,6 +156,7 @@ func (tl *TradeLogger) LogTrade(trade *PaperTrade) error {
 	record := []string{
 		fmt.Sprintf("%d", trade.ID),
 		trade.Symbol,
+		trade.Interval,
 		trade.Side,
 		trade.EntryTime.Format("2006-01-02 15:04:05"),
 		fmt.Sprintf("%.2f", trade.EntryPrice),

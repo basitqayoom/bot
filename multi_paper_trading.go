@@ -76,6 +76,7 @@ func (mp *MultiPaperTradingEngine) OpenTrade(symbol, side string, entryPrice, st
 	trade := PaperTrade{
 		ID:         mp.TradeCounter,
 		Symbol:     symbol,
+		Interval:   mp.Interval,
 		Side:       side,
 		EntryPrice: entryPrice,
 		EntryTime:  time.Now(),
