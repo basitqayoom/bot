@@ -59,11 +59,4 @@ __pycache__/
 # macOS
 .DS_Store
 
-# Trade logs
-trade.log
-trades.log
-trade-logs/
-trade_logs/
-tradelogs/
-trade*.log
 
