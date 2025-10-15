@@ -74,16 +74,20 @@ func (mp *MultiPaperTradingEngine) OpenTrade(symbol, side string, entryPrice, st
 
 	mp.TradeCounter++
 	trade := PaperTrade{
-		ID:         mp.TradeCounter,
-		Symbol:     symbol,
-		Interval:   mp.Interval,
-		Side:       side,
-		EntryPrice: entryPrice,
-		EntryTime:  time.Now(),
-		StopLoss:   stopLoss,
-		TakeProfit: takeProfit,
-		Size:       size,
-		Status:     "OPEN",
+		ID:           mp.TradeCounter,
+		Symbol:       symbol,
+		Interval:     mp.Interval,
+		Side:         side,
+		EntryPrice:   entryPrice,
+		EntryTime:    time.Now(),
+		StopLoss:     stopLoss,
+		TakeProfit:   takeProfit,
+		Size:         size,
+		Status:       "OPEN",
+		HighestPrice: entryPrice, // Initialize to entry price
+		LowestPrice:  entryPrice, // Initialize to entry price
+		MaxProfit:    0,
+		MaxProfitPct: 0,
 	}
 
 	risk := 0.0
@@ -132,6 +136,30 @@ func (mp *MultiPaperTradingEngine) CheckAndClosePositions(currentPrices map[stri
 		currentPrice, exists := currentPrices[symbol]
 		if !exists {
 			continue
+		}
+
+		// Track highest and lowest prices
+		if currentPrice > trade.HighestPrice {
+			trade.HighestPrice = currentPrice
+		}
+		if currentPrice < trade.LowestPrice {
+			trade.LowestPrice = currentPrice
+		}
+
+		// Calculate current profit/loss
+		var currentProfit float64
+		if trade.Side == "SHORT" {
+			currentProfit = (trade.EntryPrice - currentPrice) * (trade.Size / trade.EntryPrice)
+		} else {
+			currentProfit = (currentPrice - trade.EntryPrice) * (trade.Size / trade.EntryPrice)
+		}
+
+		currentProfitPct := (currentProfit / trade.Size) * 100
+
+		// Track maximum profit
+		if currentProfit > trade.MaxProfit {
+			trade.MaxProfit = currentProfit
+			trade.MaxProfitPct = currentProfitPct
 		}
 
 		shouldClose := false
@@ -212,6 +240,10 @@ func (mp *MultiPaperTradingEngine) closeTradeInternal(symbol string, exitPrice f
 
 	duration := trade.ExitTime.Sub(trade.EntryTime)
 
+	// Calculate "give back" (difference between max profit and actual profit)
+	giveBack := trade.MaxProfit - trade.ProfitLoss
+	giveBackPct := trade.MaxProfitPct - trade.ProfitLossPct
+
 	if VERBOSE_MODE {
 		fmt.Println("\n╔════════════════════════════════════════╗")
 		fmt.Println("║   ❌ POSITION CLOSED                   ║")
@@ -221,10 +253,23 @@ func (mp *MultiPaperTradingEngine) closeTradeInternal(symbol string, exitPrice f
 		fmt.Printf("📊 Reason: %s\n", reason)
 		fmt.Printf("⏱️  Duration: %v\n", duration.Round(time.Second))
 
+		// Show price extremes
+		fmt.Printf("\n📈 Highest Price: $%.2f\n", trade.HighestPrice)
+		fmt.Printf("📉 Lowest Price:  $%.2f\n", trade.LowestPrice)
+
+		// Show final P/L
 		if trade.ProfitLoss > 0 {
-			fmt.Printf("💰 P/L: +$%.2f (+%.2f%%) ✅\n", trade.ProfitLoss, trade.ProfitLossPct)
+			fmt.Printf("\n💰 Final P/L: +$%.2f (+%.2f%%) ✅\n", trade.ProfitLoss, trade.ProfitLossPct)
 		} else {
-			fmt.Printf("💰 P/L: -$%.2f (%.2f%%) ❌\n", -trade.ProfitLoss, trade.ProfitLossPct)
+			fmt.Printf("\n💰 Final P/L: -$%.2f (%.2f%%) ❌\n", -trade.ProfitLoss, trade.ProfitLossPct)
+		}
+
+		// Show maximum profit reached and "give back"
+		if trade.MaxProfit > 0 {
+			fmt.Printf("🎯 Max Profit: +$%.2f (+%.2f%%)\n", trade.MaxProfit, trade.MaxProfitPct)
+			if giveBack > 0 {
+				fmt.Printf("⚠️  Give Back:  -$%.2f (-%.2f%%) 📉\n", giveBack, giveBackPct)
+			}
 		}
 
 		totalPL := mp.CurrentBalance - mp.StartingBalance
@@ -244,6 +289,11 @@ func (mp *MultiPaperTradingEngine) closeTradeInternal(symbol string, exitPrice f
 		} else {
 			fmt.Printf("\n❌ [%s] %s CLOSED @ $%.2f | %s | P/L: -$%.2f (%.2f%%)\n",
 				symbol, trade.Side, exitPrice, reason, -trade.ProfitLoss, trade.ProfitLossPct)
+		}
+
+		// Show give back in quiet mode if significant
+		if giveBack > 0 && giveBack > 1.0 {
+			fmt.Printf("   ⚠️  Max Profit: +$%.2f | Give Back: -$%.2f\n", trade.MaxProfit, giveBack)
 		}
 	}
 

@@ -17,13 +17,14 @@ type TradeLogger struct {
 }
 
 // NewTradeLogger creates a logger for single-symbol paper trading
+// Appends trades to a single file per symbol (e.g., trades_BTCUSDT.csv)
 func NewTradeLogger(symbol string) (*TradeLogger, error) {
 	logsDir := "trade_logs"
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create logs directory: %w", err)
 	}
 
-	// Single file for all trades of this symbol - APPEND mode
+	// Single file per symbol - APPEND mode
 	filename := filepath.Join(logsDir, fmt.Sprintf("trades_%s.csv", symbol))
 
 	// Check if file exists to determine if we need to write headers
@@ -58,6 +59,12 @@ func NewTradeLogger(symbol string) (*TradeLogger, error) {
 			"Profit_Loss",
 			"Profit_Loss_Pct",
 			"Risk_Reward",
+			"Highest_Price",
+			"Lowest_Price",
+			"Max_Profit",
+			"Max_Profit_Pct",
+			"Give_Back",
+			"Give_Back_Pct",
 			"Duration_Minutes",
 			"Logged_At",
 		}
@@ -81,7 +88,7 @@ func NewTradeLogger(symbol string) (*TradeLogger, error) {
 }
 
 // NewMultiTradeLogger creates a logger for multi-symbol paper trading
-// All symbols share ONE file for complete trade history
+// Appends all trades to a single trades_all_symbols.csv file
 func NewMultiTradeLogger() (*TradeLogger, error) {
 	logsDir := "trade_logs"
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
@@ -91,13 +98,13 @@ func NewMultiTradeLogger() (*TradeLogger, error) {
 	// Single file for ALL multi-symbol trades - APPEND mode
 	filename := filepath.Join(logsDir, "trades_all_symbols.csv")
 
-	// Check if file exists
+	// Check if file exists to determine if we need to write headers
 	fileExists := false
 	if _, err := os.Stat(filename); err == nil {
 		fileExists = true
 	}
 
-	// Open file in append mode
+	// Open file in append mode (creates if doesn't exist)
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open CSV file: %w", err)
@@ -123,6 +130,12 @@ func NewMultiTradeLogger() (*TradeLogger, error) {
 			"Profit_Loss",
 			"Profit_Loss_Pct",
 			"Risk_Reward",
+			"Highest_Price",
+			"Lowest_Price",
+			"Max_Profit",
+			"Max_Profit_Pct",
+			"Give_Back",
+			"Give_Back_Pct",
 			"Duration_Minutes",
 			"Logged_At",
 		}
@@ -153,6 +166,10 @@ func (tl *TradeLogger) LogTrade(trade *PaperTrade) error {
 
 	duration := trade.ExitTime.Sub(trade.EntryTime).Minutes()
 
+	// Calculate "give back" (difference between max profit and actual profit)
+	giveBack := trade.MaxProfit - trade.ProfitLoss
+	giveBackPct := trade.MaxProfitPct - trade.ProfitLossPct
+
 	record := []string{
 		fmt.Sprintf("%d", trade.ID),
 		trade.Symbol,
@@ -169,6 +186,12 @@ func (tl *TradeLogger) LogTrade(trade *PaperTrade) error {
 		fmt.Sprintf("%.2f", trade.ProfitLoss),
 		fmt.Sprintf("%.2f", trade.ProfitLossPct),
 		fmt.Sprintf("%.2f", trade.RiskReward),
+		fmt.Sprintf("%.2f", trade.HighestPrice),
+		fmt.Sprintf("%.2f", trade.LowestPrice),
+		fmt.Sprintf("%.2f", trade.MaxProfit),
+		fmt.Sprintf("%.2f", trade.MaxProfitPct),
+		fmt.Sprintf("%.2f", giveBack),
+		fmt.Sprintf("%.2f", giveBackPct),
 		fmt.Sprintf("%.2f", duration),
 		time.Now().Format("2006-01-02 15:04:05"),
 	}
