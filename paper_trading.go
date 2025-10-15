@@ -35,15 +35,24 @@ type PaperTradingEngine struct {
 	LossCount       int
 	TotalProfit     float64
 	TotalLoss       float64
+	Logger          *TradeLogger
 }
 
 func NewPaperTradingEngine(symbol, interval string, limit int, startingBalance float64) *PaperTradingEngine {
+	// Initialize trade logger
+	logger, err := NewTradeLogger(symbol)
+	if err != nil {
+		fmt.Printf("⚠️  Failed to create trade logger: %v\n", err)
+		logger = nil
+	}
+
 	return &PaperTradingEngine{
 		TradingEngine:   NewTradingEngine(symbol, interval, limit),
 		StartingBalance: startingBalance,
 		CurrentBalance:  startingBalance,
 		Trades:          make([]PaperTrade, 0),
 		TradeCounter:    0,
+		Logger:          logger,
 	}
 }
 
@@ -170,6 +179,15 @@ func (p *PaperTradingEngine) CloseTrade(exitPrice float64, reason string) {
 
 	p.CurrentBalance += trade.ProfitLoss
 	p.Trades = append(p.Trades, *trade)
+
+	// Log trade to CSV
+	if p.Logger != nil {
+		if err := p.Logger.LogTrade(trade); err != nil {
+			fmt.Printf("⚠️  Failed to log trade to CSV: %v\n", err)
+		} else {
+			fmt.Printf("💾 Trade logged to CSV: %s\n", p.Logger.filename)
+		}
+	}
 
 	duration := trade.ExitTime.Sub(trade.EntryTime)
 
@@ -463,6 +481,14 @@ func RunPaperTrading() {
 	fmt.Println()
 
 	engine := NewPaperTradingEngine(*symbol, *interval, DEFAULT_LIMIT, *balance)
+
+	// Ensure logger is closed on exit
+	defer func() {
+		if engine.Logger != nil {
+			engine.Logger.Close()
+			fmt.Printf("\n📁 All trades saved to: %s\n", engine.Logger.filename)
+		}
+	}()
 
 	if err := engine.RunPaperTrading(); err != nil {
 		log.Fatalf("❌ Paper trading error: %v\n", err)

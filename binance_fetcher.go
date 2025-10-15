@@ -78,16 +78,16 @@ func main() {
 	limit := flag.Int("limit", 1000, "Number of candles to fetch (max 1000)")
 	paperMode := flag.Bool("paper", false, "Enable paper trading mode (simulated trades)")
 	balance := flag.Float64("balance", 10000.0, "Starting balance for paper trading")
-	
+
 	// Multi-symbol analysis flags
 	multiSymbol := flag.Bool("multi", false, "Enable multi-symbol analysis")
 	topN := flag.Int("top", 50, "Number of top symbols by volume to analyze (use with --multi)")
 	allSymbols := flag.Bool("all", false, "Analyze ALL USDT pairs (500+ symbols, use with caution)")
-	
+
 	// Multi-symbol paper trading flags
 	multiPaper := flag.Bool("multi-paper", false, "Enable multi-symbol paper trading (trade multiple coins simultaneously)")
 	maxPositions := flag.Int("max-pos", 5, "Maximum simultaneous positions (use with --multi-paper)")
-	
+
 	flag.Parse()
 
 	*symbol = strings.ToUpper(*symbol)
@@ -96,7 +96,7 @@ func main() {
 	if *multiPaper {
 		var symbols []string
 		var err error
-		
+
 		if *allSymbols {
 			fmt.Println("🔍 Fetching all USDT trading pairs from Binance...")
 			symbols, err = FetchAllBinanceSymbols()
@@ -104,20 +104,20 @@ func main() {
 			fmt.Printf("🔍 Fetching top %d symbols by 24h volume...\n", *topN)
 			symbols, err = FilterTopSymbolsByVolume(*topN)
 		}
-		
+
 		if err != nil {
 			fmt.Printf("❌ Failed to fetch symbols: %v\n", err)
 			return
 		}
-		
+
 		fmt.Printf("✅ Found %d symbols\n", len(symbols))
 		fmt.Println()
-		
+
 		engine := NewMultiPaperTradingEngine(symbols, *interval, *limit, *balance, *maxPositions)
 		if err := engine.RunMultiPaperTrading(); err != nil {
 			fmt.Printf("❌ Multi-symbol paper trading error: %v\n", err)
 		}
-		
+
 		return
 	}
 
@@ -125,7 +125,7 @@ func main() {
 	if *multiSymbol || *allSymbols {
 		var symbols []string
 		var err error
-		
+
 		if *allSymbols {
 			fmt.Println("🔍 Fetching all USDT trading pairs from Binance...")
 			symbols, err = FetchAllBinanceSymbols()
@@ -133,15 +133,15 @@ func main() {
 			fmt.Printf("🔍 Fetching top %d symbols by 24h volume...\n", *topN)
 			symbols, err = FilterTopSymbolsByVolume(*topN)
 		}
-		
+
 		if err != nil {
 			fmt.Printf("❌ Failed to fetch symbols: %v\n", err)
 			return
 		}
-		
+
 		fmt.Printf("✅ Found %d symbols\n", len(symbols))
 		fmt.Println()
-		
+
 		if ENABLE_LIVE_MODE {
 			if err := RunMultiSymbolLiveMode(symbols, *interval, *limit); err != nil {
 				fmt.Printf("❌ Multi-symbol live mode error: %v\n", err)
@@ -150,7 +150,7 @@ func main() {
 			results := RunMultiSymbolAnalysis(symbols, *interval, *limit)
 			PrintMultiSymbolResults(results)
 		}
-		
+
 		return
 	}
 

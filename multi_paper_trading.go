@@ -23,13 +23,21 @@ type MultiPaperTradingEngine struct {
 	TotalLoss       float64
 	mutex           sync.Mutex
 	MaxPositions    int // Maximum simultaneous positions
+	Logger          *TradeLogger
 }
 
 func NewMultiPaperTradingEngine(symbols []string, interval string, limit int, startingBalance float64, maxPositions int) *MultiPaperTradingEngine {
 	if maxPositions == 0 {
 		maxPositions = 5 // Default to 5 simultaneous positions
 	}
-	
+
+	// Initialize multi-symbol trade logger
+	logger, err := NewMultiTradeLogger()
+	if err != nil {
+		fmt.Printf("⚠️  Failed to create trade logger: %v\n", err)
+		logger = nil
+	}
+
 	return &MultiPaperTradingEngine{
 		Symbols:         symbols,
 		Interval:        interval,
@@ -40,6 +48,7 @@ func NewMultiPaperTradingEngine(symbols []string, interval string, limit int, st
 		ActiveTrades:    make(map[string]*PaperTrade),
 		TradeCounter:    0,
 		MaxPositions:    maxPositions,
+		Logger:          logger,
 	}
 }
 
@@ -148,7 +157,7 @@ func (mp *MultiPaperTradingEngine) CheckAndClosePositions(currentPrices map[stri
 
 func (mp *MultiPaperTradingEngine) closeTradeInternal(symbol string, exitPrice float64, reason string) {
 	trade, exists := mp.ActiveTrades[symbol]
-	if (!exists) {
+	if !exists {
 		return
 	}
 
@@ -185,6 +194,15 @@ func (mp *MultiPaperTradingEngine) closeTradeInternal(symbol string, exitPrice f
 
 	mp.CurrentBalance += trade.ProfitLoss
 	mp.Trades = append(mp.Trades, *trade)
+
+	// Log trade to CSV
+	if mp.Logger != nil {
+		if err := mp.Logger.LogTrade(trade); err != nil {
+			fmt.Printf("⚠️  Failed to log trade to CSV: %v\n", err)
+		} else {
+			fmt.Printf("💾 Trade logged to CSV\n")
+		}
+	}
 
 	duration := trade.ExitTime.Sub(trade.EntryTime)
 
@@ -447,7 +465,7 @@ func (mp *MultiPaperTradingEngine) RunMultiPaperTrading() error {
 				canOpenMore := len(mp.ActiveTrades) < mp.MaxPositions
 				mp.mutex.Unlock()
 
-				if (!hasPosition && canOpenMore) {
+				if !hasPosition && canOpenMore {
 					// Fetch detailed data for this symbol
 					engine := NewOptimizedEngine(result.Symbol, mp.Interval, mp.Limit)
 					if err := engine.FetchData(); err != nil {
@@ -542,6 +560,12 @@ func (mp *MultiPaperTradingEngine) RunMultiPaperTrading() error {
 
 		fmt.Printf("\n⏳ Next scan in %d seconds...\n", CHECK_INTERVAL)
 		time.Sleep(time.Duration(CHECK_INTERVAL) * time.Second)
+	}
+
+	// Close logger on exit
+	if mp.Logger != nil {
+		mp.Logger.Close()
+		fmt.Printf("\n📁 All trades saved to: %s\n", mp.Logger.filename)
 	}
 
 	return nil

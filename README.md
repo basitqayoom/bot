@@ -29,6 +29,7 @@ Features:
 - ✅ Position sizing with risk management (2% per trade)
 - ✅ Automatic SL/TP monitoring
 - ✅ Performance statistics (win rate, profit factor, P/L)
+- ✅ **CSV trade logging** - All trades saved to `trade_logs/trades_SYMBOL.csv`
 - ✅ No real money at risk!
 
 ### Multi-Symbol Analysis (Scan Multiple Coins)
@@ -68,6 +69,7 @@ Features:
 - ✅ **Auto SL/TP** monitoring for all open trades
 - ✅ **Live portfolio balance** updates
 - ✅ **Win rate & profit factor** statistics
+- ✅ **CSV logging** - All trades saved to `trade_logs/trades_all_symbols.csv`
 - ✅ Scans all symbols each candle and opens best opportunities
 - ✅ Perfect for diversified simulated trading!
 
