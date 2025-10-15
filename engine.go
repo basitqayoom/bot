@@ -13,7 +13,7 @@ import (
 const (
 	// Binance API Configuration
 	DEFAULT_SYMBOL   = "BTCUSDT"
-	DEFAULT_INTERVAL = "4h"
+	DEFAULT_INTERVAL = "1m"
 	DEFAULT_LIMIT    = 1000
 
 	// Technical Indicator Parameters
@@ -33,10 +33,10 @@ const (
 	SR_MAX_ZONES_DISPLAY = 10   // Maximum number of zones to display
 
 	// Risk Management
-	RISK_REWARD_RATIO   = 2.0 // Minimum risk/reward ratio for trades
-	MAX_RISK_PERCENT    = 2.0 // Max % of capital to risk per trade
-	STOP_LOSS_PERCENT   = 3.0 // Default stop loss %
-	TAKE_PROFIT_PERCENT = 6.0 // Default take profit %
+	RISK_REWARD_RATIO   = 1.5 // Lower R/R acceptable for high-frequency scalping
+	MAX_RISK_PERCENT    = 1.0 // Reduce risk per trade (more trades = aggregate risk)
+	STOP_LOSS_PERCENT   = 0.4 // Tight stop for 1m (~$400 on BTC at $100k)
+	TAKE_PROFIT_PERCENT = 0.8 // Realistic 1m target (~$800 on BTC at $100k)
 
 	// Analysis Settings
 	MIN_DIVERGENCES_FOR_SIGNAL = 1  // Minimum divergences needed for a signal

@@ -25,9 +25,18 @@ type BinanceExchangeInfo struct {
 
 // FetchAllBinanceSymbols retrieves all trading pairs from Binance
 func FetchAllBinanceSymbols() ([]string, error) {
-	url := "https://api.binance.com/api/v3/exchangeInfo"
-
-	fmt.Println("🔄 Fetching exchange info from Binance...")
+	baseURL := GetBaseURL()
+	var endpoint string
+	
+	if USE_FUTURES {
+		endpoint = "/fapi/v1/exchangeInfo"
+		fmt.Println("🔄 Fetching exchange info from Binance Futures...")
+	} else {
+		endpoint = "/api/v3/exchangeInfo"
+		fmt.Println("🔄 Fetching exchange info from Binance Spot...")
+	}
+	
+	url := baseURL + endpoint
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -47,9 +56,18 @@ func FetchAllBinanceSymbols() ([]string, error) {
 
 	var symbols []string
 	for _, s := range exchangeInfo.Symbols {
-		// Only include actively trading USDT pairs
-		if s.Status == "TRADING" && s.QuoteAsset == "USDT" {
-			symbols = append(symbols, s.Symbol)
+		// For futures, filter by PERPETUAL contract type if available
+		// For spot, just check trading status and USDT quote
+		if USE_FUTURES {
+			// Futures market - only include perpetual USDT contracts
+			if s.Status == "TRADING" && s.QuoteAsset == "USDT" {
+				symbols = append(symbols, s.Symbol)
+			}
+		} else {
+			// Spot market - only include actively trading USDT pairs
+			if s.Status == "TRADING" && s.QuoteAsset == "USDT" {
+				symbols = append(symbols, s.Symbol)
+			}
 		}
 	}
 
@@ -58,9 +76,18 @@ func FetchAllBinanceSymbols() ([]string, error) {
 
 // FilterTopSymbolsByVolume gets the top N symbols by 24h volume
 func FilterTopSymbolsByVolume(limit int) ([]string, error) {
-	url := "https://api.binance.com/api/v3/ticker/24hr"
-
-	fmt.Printf("🔄 Fetching 24h volume data for ranking...\n")
+	baseURL := GetBaseURL()
+	var endpoint string
+	
+	if USE_FUTURES {
+		endpoint = "/fapi/v1/ticker/24hr"
+		fmt.Printf("🔄 Fetching 24h volume data from Futures for ranking...\n")
+	} else {
+		endpoint = "/api/v3/ticker/24hr"
+		fmt.Printf("🔄 Fetching 24h volume data from Spot for ranking...\n")
+	}
+	
+	url := baseURL + endpoint
 
 	resp, err := http.Get(url)
 	if err != nil {

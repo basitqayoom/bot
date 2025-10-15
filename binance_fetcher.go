@@ -25,8 +25,30 @@ type Candle struct {
 	TakerBuyQuoteAssetVolume float64
 }
 
+// Global flag to determine if we're using futures or spot market
+var USE_FUTURES bool = false
+
+// GetBaseURL returns the appropriate base URL based on market type
+func GetBaseURL() string {
+	if USE_FUTURES {
+		return "https://fapi.binance.com"
+	}
+	return "https://api.binance.com"
+}
+
+// GetKlinesEndpoint returns the appropriate klines endpoint based on market type
+func GetKlinesEndpoint() string {
+	if USE_FUTURES {
+		return "/fapi/v1/klines"
+	}
+	return "/api/v3/klines"
+}
+
 func fetchKlines(symbol, interval string, limit int) ([]Candle, error) {
-	url := fmt.Sprintf("https://api.binance.com/api/v3/klines?symbol=%s&interval=%s&limit=%d", symbol, interval, limit)
+	baseURL := GetBaseURL()
+	endpoint := GetKlinesEndpoint()
+	url := fmt.Sprintf("%s%s?symbol=%s&interval=%s&limit=%d", baseURL, endpoint, symbol, interval, limit)
+	
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -91,7 +113,20 @@ func main() {
 	// Display mode flags
 	quiet := flag.Bool("quiet", false, "Quiet mode - only show trading signals and P/L (no technical details)")
 
+	// Market type flag
+	futures := flag.Bool("futures", false, "Use Binance Futures market (default: spot market)")
+
 	flag.Parse()
+
+	// Set market type
+	USE_FUTURES = *futures
+	
+	// Display market type
+	marketType := "SPOT"
+	if USE_FUTURES {
+		marketType = "FUTURES"
+	}
+	fmt.Printf("📊 Market Type: %s\n", marketType)
 
 	// Apply quiet mode settings
 	if *quiet {
