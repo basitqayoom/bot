@@ -433,9 +433,19 @@ func (p *PaperTradingEngine) RunPaperTrading() error {
 				rr := reward / risk
 
 				if rr >= RISK_REWARD_RATIO {
+					// ✅ FIXED: Use full balance for single symbol trading
+					// (In single symbol mode, we only trade one pair at a time)
+					positionSize := p.StartingBalance
+
+					// Optional: Log risk-based calculation for comparison
 					riskAmount := p.CurrentBalance * (MAX_RISK_PERCENT / 100)
 					riskPercentPrice := (risk / entry) * 100
-					positionSize := riskAmount / (riskPercentPrice / 100)
+					riskBasedSize := riskAmount / (riskPercentPrice / 100)
+
+					if riskBasedSize > positionSize && VERBOSE_MODE {
+						fmt.Printf("   ⚠️  Risk-based size $%.0f capped to $%.0f (1x leverage)\n",
+							riskBasedSize, positionSize)
+					}
 
 					fmt.Println("\n🎯 BEARISH SIGNAL DETECTED!")
 					fmt.Printf("📊 RSI: %.2f (Overbought)\n", currentRSI)

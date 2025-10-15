@@ -27,7 +27,7 @@ type BinanceExchangeInfo struct {
 func FetchAllBinanceSymbols() ([]string, error) {
 	baseURL := GetBaseURL()
 	var endpoint string
-	
+
 	if USE_FUTURES {
 		endpoint = "/fapi/v1/exchangeInfo"
 		fmt.Println("🔄 Fetching exchange info from Binance Futures...")
@@ -35,7 +35,7 @@ func FetchAllBinanceSymbols() ([]string, error) {
 		endpoint = "/api/v3/exchangeInfo"
 		fmt.Println("🔄 Fetching exchange info from Binance Spot...")
 	}
-	
+
 	url := baseURL + endpoint
 
 	resp, err := http.Get(url)
@@ -78,7 +78,7 @@ func FetchAllBinanceSymbols() ([]string, error) {
 func FilterTopSymbolsByVolume(limit int) ([]string, error) {
 	baseURL := GetBaseURL()
 	var endpoint string
-	
+
 	if USE_FUTURES {
 		endpoint = "/fapi/v1/ticker/24hr"
 		fmt.Printf("🔄 Fetching 24h volume data from Futures for ranking...\n")
@@ -86,7 +86,7 @@ func FilterTopSymbolsByVolume(limit int) ([]string, error) {
 		endpoint = "/api/v3/ticker/24hr"
 		fmt.Printf("🔄 Fetching 24h volume data from Spot for ranking...\n")
 	}
-	
+
 	url := baseURL + endpoint
 
 	resp, err := http.Get(url)

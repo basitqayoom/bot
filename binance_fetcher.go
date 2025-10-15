@@ -48,7 +48,7 @@ func fetchKlines(symbol, interval string, limit int) ([]Candle, error) {
 	baseURL := GetBaseURL()
 	endpoint := GetKlinesEndpoint()
 	url := fmt.Sprintf("%s%s?symbol=%s&interval=%s&limit=%d", baseURL, endpoint, symbol, interval, limit)
-	
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func main() {
 
 	// Set market type
 	USE_FUTURES = *futures
-	
+
 	// Display market type
 	marketType := "SPOT"
 	if USE_FUTURES {

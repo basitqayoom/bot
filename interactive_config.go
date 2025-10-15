@@ -18,7 +18,7 @@ func PrintBotConfig(symbol, interval string, balance float64, mode string) {
 		marketType = "FUTURES"
 	}
 	baseURL := GetBaseURL()
-	
+
 	fmt.Println("\n╔════════════════════════════════════════════════════════════╗")
 	fmt.Println("║              BOT CONFIGURATION                             ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
@@ -26,7 +26,7 @@ func PrintBotConfig(symbol, interval string, balance float64, mode string) {
 	fmt.Printf("📊 Symbol:            %s\n", symbol)
 	fmt.Printf("⏰ Interval:          %s\n", interval)
 	fmt.Printf("💰 Balance:           $%.2f\n", balance)
-	
+
 	fmt.Println("\n🌐 MARKET CONFIGURATION:")
 	fmt.Printf("   Market Type:       %s\n", marketType)
 	fmt.Printf("   Base URL:          %s\n", baseURL)
@@ -35,7 +35,7 @@ func PrintBotConfig(symbol, interval string, balance float64, mode string) {
 	} else {
 		fmt.Printf("   Endpoint:          /api/v3/klines\n")
 	}
-	
+
 	fmt.Println("\n⚙️  SYSTEM SETTINGS:")
 	fmt.Printf("   Live Mode:         %v\n", ENABLE_LIVE_MODE)
 	fmt.Printf("   Wait for Close:    %v\n", WAIT_FOR_CANDLE_CLOSE)
@@ -78,7 +78,7 @@ func PrintMultiSymbolConfig(symbols []string, interval string, balance float64, 
 		marketType = "FUTURES"
 	}
 	baseURL := GetBaseURL()
-	
+
 	fmt.Println("\n╔════════════════════════════════════════════════════════════╗")
 	fmt.Println("║         MULTI-SYMBOL BOT CONFIGURATION                     ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
@@ -87,7 +87,7 @@ func PrintMultiSymbolConfig(symbols []string, interval string, balance float64, 
 	fmt.Printf("⏰ Interval:          %s\n", interval)
 	fmt.Printf("💰 Starting Balance:  $%.2f\n", balance)
 	fmt.Printf("🎯 Max Positions:     %d\n", maxPositions)
-	
+
 	fmt.Println("\n🌐 MARKET CONFIGURATION:")
 	fmt.Printf("   Market Type:       %s\n", marketType)
 	fmt.Printf("   Base URL:          %s\n", baseURL)
@@ -100,7 +100,7 @@ func PrintMultiSymbolConfig(symbols []string, interval string, balance float64, 
 		fmt.Printf("   Exchange Info:     /api/v3/exchangeInfo\n")
 		fmt.Printf("   24h Ticker:        /api/v3/ticker/24hr\n")
 	}
-	
+
 	fmt.Println("\n⚙️  SYSTEM SETTINGS:")
 	fmt.Printf("   Live Mode:         %v\n", ENABLE_LIVE_MODE)
 	fmt.Printf("   Wait for Close:    %v\n", WAIT_FOR_CANDLE_CLOSE)

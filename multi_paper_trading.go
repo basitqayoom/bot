@@ -552,9 +552,19 @@ func (mp *MultiPaperTradingEngine) RunMultiPaperTrading() error {
 					rr := reward / risk
 
 					if rr >= RISK_REWARD_RATIO && currentRSI > 70 {
+						// ✅ FIXED: Use simple fixed allocation (realistic for 1x leverage)
+						// Each trade gets equal share of initial balance
+						positionSize := mp.StartingBalance / float64(mp.MaxPositions)
+
+						// Optional: Log if risk-based sizing would have been larger (for analysis)
 						riskAmount := mp.CurrentBalance * (MAX_RISK_PERCENT / 100)
 						riskPercentPrice := (risk / entry) * 100
-						positionSize := riskAmount / (riskPercentPrice / 100)
+						riskBasedSize := riskAmount / (riskPercentPrice / 100)
+
+						if riskBasedSize > positionSize && VERBOSE_MODE {
+							fmt.Printf("   ⚠️  [%s] Risk-based size $%.0f capped to $%.0f (1x leverage)\n",
+								result.Symbol, riskBasedSize, positionSize)
+						}
 
 						fmt.Printf("\n🎯 SIGNAL: %s (RSI: %.2f, Div: %d, R/R: %.2f:1)\n",
 							result.Symbol, currentRSI, result.Divergences, rr)
