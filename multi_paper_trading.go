@@ -404,11 +404,18 @@ func (mp *MultiPaperTradingEngine) RunMultiPaperTrading() error {
 	fmt.Println("║   MULTI-SYMBOL PAPER TRADING v1.0      ║")
 	fmt.Println("║   SIMULATED TRADING - NO REAL MONEY    ║")
 	fmt.Println("╚════════════════════════════════════════╝")
-	fmt.Printf("\n🚀 Symbols: %d coins\n", len(mp.Symbols))
-	fmt.Printf("⏰ Interval: %s\n", mp.Interval)
-	fmt.Printf("💰 Starting Balance: $%.2f\n", mp.StartingBalance)
-	fmt.Printf("📊 Risk per trade: %.1f%%\n", MAX_RISK_PERCENT)
-	fmt.Printf("📈 Max Positions: %d\n", mp.MaxPositions)
+
+	// Print full configuration at startup
+	PrintMultiSymbolConfig(mp.Symbols, mp.Interval, mp.StartingBalance, mp.MaxPositions, "MULTI-SYMBOL PAPER TRADING")
+
+	// Enable interactive mode with portfolio display on status
+	StartInteractiveMode(func() {
+		PrintMultiSymbolConfig(mp.Symbols, mp.Interval, mp.StartingBalance, mp.MaxPositions, "MULTI-SYMBOL PAPER TRADING")
+	}, func() {
+		// Show portfolio when 's' is pressed
+		mp.PrintPortfolio()
+	})
+
 	fmt.Println()
 
 	if ENABLE_LIVE_MODE {

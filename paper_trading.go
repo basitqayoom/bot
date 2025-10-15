@@ -471,16 +471,18 @@ func RunPaperTrading() {
 	balance := flag.Float64("balance", 10000.0, "Starting balance in USD")
 	flag.Parse()
 
-	fmt.Println("\n╔════════════════════════════════════════╗")
-	fmt.Println("║   PAPER TRADING INITIALIZATION         ║")
-	fmt.Println("╚════════════════════════════════════════╝")
-	fmt.Printf("\nSymbol:   %s\n", *symbol)
-	fmt.Printf("Interval: %s\n", *interval)
-	fmt.Printf("Balance:  $%.2f\n", *balance)
-	fmt.Printf("Mode:     %s\n", map[bool]string{true: "LIVE", false: "SNAPSHOT"}[ENABLE_LIVE_MODE])
-	fmt.Println()
-
 	engine := NewPaperTradingEngine(*symbol, *interval, DEFAULT_LIMIT, *balance)
+
+	// Print configuration at startup
+	PrintBotConfig(*symbol, *interval, *balance, "PAPER TRADING")
+
+	// Enable interactive commands with portfolio display on status
+	StartInteractiveMode(func() {
+		PrintBotConfig(*symbol, *interval, *balance, "PAPER TRADING")
+	}, func() {
+		// Show portfolio when 's' is pressed
+		engine.PrintStats()
+	})
 
 	// Ensure logger is closed on exit
 	defer func() {
