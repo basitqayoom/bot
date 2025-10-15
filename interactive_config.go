@@ -12,6 +12,13 @@ import (
 
 // PrintBotConfig displays current bot configuration
 func PrintBotConfig(symbol, interval string, balance float64, mode string) {
+	// Determine market type
+	marketType := "SPOT"
+	if USE_FUTURES {
+		marketType = "FUTURES"
+	}
+	baseURL := GetBaseURL()
+	
 	fmt.Println("\n╔════════════════════════════════════════════════════════════╗")
 	fmt.Println("║              BOT CONFIGURATION                             ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
@@ -19,11 +26,22 @@ func PrintBotConfig(symbol, interval string, balance float64, mode string) {
 	fmt.Printf("📊 Symbol:            %s\n", symbol)
 	fmt.Printf("⏰ Interval:          %s\n", interval)
 	fmt.Printf("💰 Balance:           $%.2f\n", balance)
-	fmt.Printf("🔴 Live Mode:         %v\n", ENABLE_LIVE_MODE)
-	fmt.Printf("⏳ Wait for Close:    %v\n", WAIT_FOR_CANDLE_CLOSE)
-	fmt.Printf("⚡ Parallel Mode:     %v\n", ENABLE_PARALLEL_MODE)
-	fmt.Printf("👷 Workers:           %d\n", NUM_WORKERS)
-	fmt.Printf("📝 Verbose:           %v\n", VERBOSE_MODE)
+	
+	fmt.Println("\n🌐 MARKET CONFIGURATION:")
+	fmt.Printf("   Market Type:       %s\n", marketType)
+	fmt.Printf("   Base URL:          %s\n", baseURL)
+	if USE_FUTURES {
+		fmt.Printf("   Endpoint:          /fapi/v1/klines\n")
+	} else {
+		fmt.Printf("   Endpoint:          /api/v3/klines\n")
+	}
+	
+	fmt.Println("\n⚙️  SYSTEM SETTINGS:")
+	fmt.Printf("   Live Mode:         %v\n", ENABLE_LIVE_MODE)
+	fmt.Printf("   Wait for Close:    %v\n", WAIT_FOR_CANDLE_CLOSE)
+	fmt.Printf("   Parallel Mode:     %v\n", ENABLE_PARALLEL_MODE)
+	fmt.Printf("   Workers:           %d\n", NUM_WORKERS)
+	fmt.Printf("   Verbose:           %v\n", VERBOSE_MODE)
 
 	fmt.Println("\n📈 STRATEGY PARAMETERS:")
 	fmt.Printf("   RSI Period:        %d\n", RSI_PERIOD)
@@ -54,6 +72,13 @@ func PrintBotConfig(symbol, interval string, balance float64, mode string) {
 
 // PrintMultiSymbolConfig displays multi-symbol configuration
 func PrintMultiSymbolConfig(symbols []string, interval string, balance float64, maxPositions int, mode string) {
+	// Determine market type
+	marketType := "SPOT"
+	if USE_FUTURES {
+		marketType = "FUTURES"
+	}
+	baseURL := GetBaseURL()
+	
 	fmt.Println("\n╔════════════════════════════════════════════════════════════╗")
 	fmt.Println("║         MULTI-SYMBOL BOT CONFIGURATION                     ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
@@ -62,10 +87,25 @@ func PrintMultiSymbolConfig(symbols []string, interval string, balance float64, 
 	fmt.Printf("⏰ Interval:          %s\n", interval)
 	fmt.Printf("💰 Starting Balance:  $%.2f\n", balance)
 	fmt.Printf("🎯 Max Positions:     %d\n", maxPositions)
-	fmt.Printf("🔴 Live Mode:         %v\n", ENABLE_LIVE_MODE)
-	fmt.Printf("⏳ Wait for Close:    %v\n", WAIT_FOR_CANDLE_CLOSE)
-	fmt.Printf("⚡ Parallel Mode:     %v\n", ENABLE_PARALLEL_MODE)
-	fmt.Printf("👷 Workers:           %d\n", NUM_WORKERS)
+	
+	fmt.Println("\n🌐 MARKET CONFIGURATION:")
+	fmt.Printf("   Market Type:       %s\n", marketType)
+	fmt.Printf("   Base URL:          %s\n", baseURL)
+	if USE_FUTURES {
+		fmt.Printf("   Endpoint:          /fapi/v1/klines\n")
+		fmt.Printf("   Exchange Info:     /fapi/v1/exchangeInfo\n")
+		fmt.Printf("   24h Ticker:        /fapi/v1/ticker/24hr\n")
+	} else {
+		fmt.Printf("   Endpoint:          /api/v3/klines\n")
+		fmt.Printf("   Exchange Info:     /api/v3/exchangeInfo\n")
+		fmt.Printf("   24h Ticker:        /api/v3/ticker/24hr\n")
+	}
+	
+	fmt.Println("\n⚙️  SYSTEM SETTINGS:")
+	fmt.Printf("   Live Mode:         %v\n", ENABLE_LIVE_MODE)
+	fmt.Printf("   Wait for Close:    %v\n", WAIT_FOR_CANDLE_CLOSE)
+	fmt.Printf("   Parallel Mode:     %v\n", ENABLE_PARALLEL_MODE)
+	fmt.Printf("   Workers:           %d\n", NUM_WORKERS)
 
 	fmt.Println("\n📋 SYMBOLS LIST (First 10):")
 	displayCount := 10
