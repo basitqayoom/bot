@@ -95,17 +95,22 @@ func (p *PaperTradingEngine) OpenTrade(side string, entryPrice, stopLoss, takePr
 
 	p.ActiveTrade = &trade
 
-	fmt.Println("\n╔════════════════════════════════════════╗")
-	fmt.Println("║      PAPER TRADE OPENED                ║")
-	fmt.Println("╚════════════════════════════════════════╝")
-	fmt.Printf("\n📝 Trade #%d: %s %s\n", trade.ID, side, p.Symbol)
-	fmt.Printf("💰 Entry:       $%.2f\n", entryPrice)
-	fmt.Printf("🛑 Stop Loss:   $%.2f (%.2f%%)\n", stopLoss, (risk/entryPrice)*100)
-	fmt.Printf("🎯 Take Profit: $%.2f (%.2f%%)\n", takeProfit, (reward/entryPrice)*100)
-	fmt.Printf("📊 Size:        $%.2f\n", size)
-	fmt.Printf("⚖️  Risk/Reward: %.2f:1\n", trade.RiskReward)
-	fmt.Printf("⏰ Time:        %s\n", trade.EntryTime.Format("2006-01-02 15:04:05"))
-	fmt.Println("════════════════════════════════════════")
+	if VERBOSE_MODE {
+		fmt.Println("\n╔════════════════════════════════════════╗")
+		fmt.Println("║      PAPER TRADE OPENED                ║")
+		fmt.Println("╚════════════════════════════════════════╝")
+		fmt.Printf("\n📝 Trade #%d: %s %s\n", trade.ID, side, p.Symbol)
+		fmt.Printf("💰 Entry:       $%.2f\n", entryPrice)
+		fmt.Printf("🛑 Stop Loss:   $%.2f (%.2f%%)\n", stopLoss, (risk/entryPrice)*100)
+		fmt.Printf("🎯 Take Profit: $%.2f (%.2f%%)\n", takeProfit, (reward/entryPrice)*100)
+		fmt.Printf("📊 Size:        $%.2f\n", size)
+		fmt.Printf("⚖️  Risk/Reward: %.2f:1\n", trade.RiskReward)
+		fmt.Printf("⏰ Time:        %s\n", trade.EntryTime.Format("2006-01-02 15:04:05"))
+		fmt.Println("════════════════════════════════════════")
+	} else {
+		fmt.Printf("\n🎯 [%s] %s OPENED @ $%.2f | SL: $%.2f | TP: $%.2f | Size: $%.2f\n",
+			p.Symbol, side, entryPrice, stopLoss, takeProfit, size)
+	}
 }
 
 func (p *PaperTradingEngine) CheckAndClosePosition(currentPrice float64) {
@@ -182,27 +187,38 @@ func (p *PaperTradingEngine) CloseTrade(exitPrice float64, reason string) {
 
 	// Log trade to CSV
 	if p.Logger != nil {
-		if err := p.Logger.LogTrade(trade); err != nil {
+		if err := p.Logger.LogTrade(trade); err != nil && VERBOSE_MODE {
 			fmt.Printf("⚠️  Failed to log trade to CSV: %v\n", err)
-		} else {
+		} else if VERBOSE_MODE {
 			fmt.Printf("💾 Trade logged to CSV: %s\n", p.Logger.filename)
 		}
 	}
 
 	duration := trade.ExitTime.Sub(trade.EntryTime)
 
-	fmt.Println("\n╔════════════════════════════════════════╗")
-	fmt.Println("║      PAPER TRADE CLOSED                ║")
-	fmt.Println("╚════════════════════════════════════════╝")
-	fmt.Printf("\n📝 Trade #%d: %s %s\n", trade.ID, trade.Side, p.Symbol)
-	fmt.Printf("📍 Entry:  $%.2f → Exit: $%.2f\n", trade.EntryPrice, exitPrice)
-	fmt.Printf("📊 Reason: %s\n", reason)
-	fmt.Printf("⏱️  Duration: %v\n", duration.Round(time.Second))
+	if VERBOSE_MODE {
+		fmt.Println("\n╔════════════════════════════════════════╗")
+		fmt.Println("║      PAPER TRADE CLOSED                ║")
+		fmt.Println("╚════════════════════════════════════════╝")
+		fmt.Printf("\n📝 Trade #%d: %s %s\n", trade.ID, trade.Side, p.Symbol)
+		fmt.Printf("📍 Entry:  $%.2f → Exit: $%.2f\n", trade.EntryPrice, exitPrice)
+		fmt.Printf("📊 Reason: %s\n", reason)
+		fmt.Printf("⏱️  Duration: %v\n", duration.Round(time.Second))
 
-	if trade.ProfitLoss > 0 {
-		fmt.Printf("💰 P/L: +$%.2f (+%.2f%%) ✅\n", trade.ProfitLoss, trade.ProfitLossPct)
+		if trade.ProfitLoss > 0 {
+			fmt.Printf("💰 P/L: +$%.2f (+%.2f%%) ✅\n", trade.ProfitLoss, trade.ProfitLossPct)
+		} else {
+			fmt.Printf("💰 P/L: -$%.2f (%.2f%%) ❌\n", -trade.ProfitLoss, trade.ProfitLossPct)
+		}
 	} else {
-		fmt.Printf("💰 P/L: -$%.2f (%.2f%%) ❌\n", -trade.ProfitLoss, trade.ProfitLossPct)
+		// Quiet mode: concise output
+		if trade.ProfitLoss > 0 {
+			fmt.Printf("\n✅ [%s] %s CLOSED @ $%.2f | %s | P/L: +$%.2f (+%.2f%%)\n",
+				p.Symbol, trade.Side, exitPrice, reason, trade.ProfitLoss, trade.ProfitLossPct)
+		} else {
+			fmt.Printf("\n❌ [%s] %s CLOSED @ $%.2f | %s | P/L: -$%.2f (%.2f%%)\n",
+				p.Symbol, trade.Side, exitPrice, reason, -trade.ProfitLoss, trade.ProfitLossPct)
+		}
 	}
 
 	fmt.Printf("💵 Balance: $%.2f → $%.2f\n", p.StartingBalance, p.CurrentBalance)

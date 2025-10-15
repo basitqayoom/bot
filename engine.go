@@ -43,13 +43,6 @@ const (
 	DIVERGENCE_STRENGTH_HIGH   = 10 // RSI difference % for strong divergence
 	DIVERGENCE_STRENGTH_MEDIUM = 5  // RSI difference % for medium divergence
 
-	// Display Settings
-	SHOW_DIVERGENCES    = true
-	SHOW_SR_ZONES       = true
-	SHOW_TRADE_SIGNALS  = true
-	SHOW_DETAILED_ZONES = true
-	VERBOSE_MODE        = true
-
 	// Scheduler Configuration
 	ENABLE_LIVE_MODE      = true // Set to true for continuous monitoring
 	CHECK_INTERVAL        = 30   // Seconds between checks for new candle
@@ -63,6 +56,35 @@ const (
 	NUM_WORKERS          = 4     // Number of concurrent workers for batch processing
 	ENABLE_MULTI_SYMBOL  = false // Enable concurrent multi-symbol analysis
 )
+
+// ==================== DISPLAY VARIABLES ====================
+// These are variables (not constants) so they can be modified by flags
+
+var (
+	// Display Settings
+	SHOW_DIVERGENCES    = true
+	SHOW_SR_ZONES       = true
+	SHOW_TRADE_SIGNALS  = true
+	SHOW_DETAILED_ZONES = true
+	VERBOSE_MODE        = true
+)
+
+// ==================== DISPLAY MODE CONTROL ====================
+
+// SetQuietMode enables or disables quiet mode (minimal output)
+func SetQuietMode(quiet bool) {
+	if quiet {
+		VERBOSE_MODE = false
+		SHOW_DIVERGENCES = false
+		SHOW_SR_ZONES = false
+		SHOW_DETAILED_ZONES = false
+	} else {
+		VERBOSE_MODE = true
+		SHOW_DIVERGENCES = true
+		SHOW_SR_ZONES = true
+		SHOW_DETAILED_ZONES = true
+	}
+}
 
 // ==================== ENGINE STRUCT ====================
 

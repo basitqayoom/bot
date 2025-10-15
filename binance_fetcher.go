@@ -88,7 +88,15 @@ func main() {
 	multiPaper := flag.Bool("multi-paper", false, "Enable multi-symbol paper trading (trade multiple coins simultaneously)")
 	maxPositions := flag.Int("max-pos", 5, "Maximum simultaneous positions (use with --multi-paper)")
 
+	// Display mode flags
+	quiet := flag.Bool("quiet", false, "Quiet mode - only show trading signals and P/L (no technical details)")
+
 	flag.Parse()
+
+	// Apply quiet mode settings
+	if *quiet {
+		SetQuietMode(true)
+	}
 
 	*symbol = strings.ToUpper(*symbol)
 

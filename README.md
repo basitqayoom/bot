@@ -324,6 +324,35 @@ go run . --multi-paper --top=100 --interval=1h --balance=50000 --max-pos=10
 
 # Multi-symbol live monitoring (requires ENABLE_LIVE_MODE=true)
 go run . --multi --top=30 --interval=1h
+
+# Quiet mode (minimal output - recommended for 50+ symbols) 🆕
+go run . --multi-paper --top=300 --interval=4h --balance=50000 --quiet
+```
+
+### Available Flags
+
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--symbol` | Trading pair symbol | `--symbol=ETHUSDT` |
+| `--interval` | Candle timeframe | `--interval=1h` |
+| `--limit` | Number of candles | `--limit=1000` |
+| `--paper` | Enable paper trading | `--paper` |
+| `--balance` | Starting balance (USD) | `--balance=10000` |
+| `--multi` | Multi-symbol analysis | `--multi` |
+| `--top` | Top N symbols by volume | `--top=50` |
+| `--all` | Analyze ALL USDT pairs | `--all` |
+| `--multi-paper` | Multi-symbol paper trading | `--multi-paper` |
+| `--max-pos` | Max simultaneous positions | `--max-pos=5` |
+| `--quiet` | Minimal output (trading only) | `--quiet` |
+
+### Interactive Commands (While Running)
+
+| Command | Description |
+|---------|-------------|
+| `c` or `config` | Show full bot configuration |
+| `s` or `status` | Show status + portfolio stats |
+| `h` or `help` | Show help message |
+| `q` or `quit` | Exit bot gracefully |
 ```
 
 ## 📦 Project Files

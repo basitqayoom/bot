@@ -105,15 +105,20 @@ func (mp *MultiPaperTradingEngine) OpenTrade(symbol, side string, entryPrice, st
 
 	mp.ActiveTrades[symbol] = &trade
 
-	fmt.Println("\n╔════════════════════════════════════════╗")
-	fmt.Println("║   📝 NEW POSITION OPENED               ║")
-	fmt.Println("╚════════════════════════════════════════╝")
-	fmt.Printf("\n🔔 Trade #%d: %s %s\n", trade.ID, side, symbol)
-	fmt.Printf("💰 Entry:       $%.2f\n", entryPrice)
-	fmt.Printf("🛑 Stop Loss:   $%.2f (%.2f%%)\n", stopLoss, (risk/entryPrice)*100)
-	fmt.Printf("🎯 Take Profit: $%.2f (%.2f%%)\n", takeProfit, (reward/entryPrice)*100)
-	fmt.Printf("📊 Size:        $%.2f\n", size)
-	fmt.Printf("⚖️  Risk/Reward: %.2f:1\n", trade.RiskReward)
+	if VERBOSE_MODE {
+		fmt.Println("\n╔════════════════════════════════════════╗")
+		fmt.Println("║   📝 NEW POSITION OPENED               ║")
+		fmt.Println("╚════════════════════════════════════════╝")
+		fmt.Printf("\n🔔 Trade #%d: %s %s\n", trade.ID, side, symbol)
+		fmt.Printf("💰 Entry:       $%.2f\n", entryPrice)
+		fmt.Printf("🛑 Stop Loss:   $%.2f (%.2f%%)\n", stopLoss, (risk/entryPrice)*100)
+		fmt.Printf("🎯 Take Profit: $%.2f (%.2f%%)\n", takeProfit, (reward/entryPrice)*100)
+		fmt.Printf("📊 Size:        $%.2f\n", size)
+		fmt.Printf("⚖️  Risk/Reward: %.2f:1\n", trade.RiskReward)
+	} else {
+		fmt.Printf("\n🎯 [%s] %s OPENED @ $%.2f | SL: $%.2f | TP: $%.2f\n",
+			symbol, side, entryPrice, stopLoss, takeProfit)
+	}
 	fmt.Printf("📈 Active Positions: %d/%d\n", len(mp.ActiveTrades), mp.MaxPositions)
 	fmt.Println("════════════════════════════════════════")
 }
@@ -206,29 +211,40 @@ func (mp *MultiPaperTradingEngine) closeTradeInternal(symbol string, exitPrice f
 
 	duration := trade.ExitTime.Sub(trade.EntryTime)
 
-	fmt.Println("\n╔════════════════════════════════════════╗")
-	fmt.Println("║   ❌ POSITION CLOSED                   ║")
-	fmt.Println("╚════════════════════════════════════════╝")
-	fmt.Printf("\n📝 Trade #%d: %s %s\n", trade.ID, trade.Side, symbol)
-	fmt.Printf("📍 Entry:  $%.2f → Exit: $%.2f\n", trade.EntryPrice, exitPrice)
-	fmt.Printf("📊 Reason: %s\n", reason)
-	fmt.Printf("⏱️  Duration: %v\n", duration.Round(time.Second))
+	if VERBOSE_MODE {
+		fmt.Println("\n╔════════════════════════════════════════╗")
+		fmt.Println("║   ❌ POSITION CLOSED                   ║")
+		fmt.Println("╚════════════════════════════════════════╝")
+		fmt.Printf("\n📝 Trade #%d: %s %s\n", trade.ID, trade.Side, symbol)
+		fmt.Printf("📍 Entry:  $%.2f → Exit: $%.2f\n", trade.EntryPrice, exitPrice)
+		fmt.Printf("📊 Reason: %s\n", reason)
+		fmt.Printf("⏱️  Duration: %v\n", duration.Round(time.Second))
 
-	if trade.ProfitLoss > 0 {
-		fmt.Printf("💰 P/L: +$%.2f (+%.2f%%) ✅\n", trade.ProfitLoss, trade.ProfitLossPct)
-	} else {
-		fmt.Printf("💰 P/L: -$%.2f (%.2f%%) ❌\n", -trade.ProfitLoss, trade.ProfitLossPct)
-	}
+		if trade.ProfitLoss > 0 {
+			fmt.Printf("💰 P/L: +$%.2f (+%.2f%%) ✅\n", trade.ProfitLoss, trade.ProfitLossPct)
+		} else {
+			fmt.Printf("💰 P/L: -$%.2f (%.2f%%) ❌\n", -trade.ProfitLoss, trade.ProfitLossPct)
+		}
 
-	totalPL := mp.CurrentBalance - mp.StartingBalance
-	totalPLPct := (totalPL / mp.StartingBalance) * 100
-	if totalPL > 0 {
-		fmt.Printf("💵 Portfolio: $%.2f (+%.2f%%) ✅\n", mp.CurrentBalance, totalPLPct)
+		totalPL := mp.CurrentBalance - mp.StartingBalance
+		totalPLPct := (totalPL / mp.StartingBalance) * 100
+		if totalPL > 0 {
+			fmt.Printf("💵 Portfolio: $%.2f (+%.2f%%) ✅\n", mp.CurrentBalance, totalPLPct)
+		} else {
+			fmt.Printf("💵 Portfolio: $%.2f (%.2f%%) ❌\n", mp.CurrentBalance, totalPLPct)
+		}
+		fmt.Printf("📈 Active Positions: %d/%d\n", len(mp.ActiveTrades)-1, mp.MaxPositions)
+		fmt.Println("════════════════════════════════════════")
 	} else {
-		fmt.Printf("💵 Portfolio: $%.2f (%.2f%%) ❌\n", mp.CurrentBalance, totalPLPct)
+		// Quiet mode: concise output
+		if trade.ProfitLoss > 0 {
+			fmt.Printf("\n✅ [%s] %s CLOSED @ $%.2f | %s | P/L: +$%.2f (+%.2f%%)\n",
+				symbol, trade.Side, exitPrice, reason, trade.ProfitLoss, trade.ProfitLossPct)
+		} else {
+			fmt.Printf("\n❌ [%s] %s CLOSED @ $%.2f | %s | P/L: -$%.2f (%.2f%%)\n",
+				symbol, trade.Side, exitPrice, reason, -trade.ProfitLoss, trade.ProfitLossPct)
+		}
 	}
-	fmt.Printf("📈 Active Positions: %d/%d\n", len(mp.ActiveTrades)-1, mp.MaxPositions)
-	fmt.Println("════════════════════════════════════════")
 
 	delete(mp.ActiveTrades, symbol)
 }

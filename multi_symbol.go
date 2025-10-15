@@ -128,12 +128,16 @@ type MultiSymbolResult struct {
 
 // RunMultiSymbolAnalysis analyzes multiple symbols in parallel
 func RunMultiSymbolAnalysis(symbols []string, interval string, limit int) []MultiSymbolResult {
-	fmt.Printf("\n╔════════════════════════════════════════╗\n")
-	fmt.Printf("║   MULTI-SYMBOL PARALLEL ANALYSIS       ║\n")
-	fmt.Printf("╚════════════════════════════════════════╝\n")
-	fmt.Printf("\n🚀 Analyzing %d symbols on %s timeframe\n", len(symbols), interval)
-	fmt.Printf("⚡ Using %d parallel workers\n", NUM_WORKERS)
-	fmt.Println()
+	if VERBOSE_MODE {
+		fmt.Printf("\n╔════════════════════════════════════════╗\n")
+		fmt.Printf("║   MULTI-SYMBOL PARALLEL ANALYSIS       ║\n")
+		fmt.Printf("╚════════════════════════════════════════╝\n")
+		fmt.Printf("\n🚀 Analyzing %d symbols on %s timeframe\n", len(symbols), interval)
+		fmt.Printf("⚡ Using %d parallel workers\n", NUM_WORKERS)
+		fmt.Println()
+	} else {
+		fmt.Printf("\n⚡ Analyzing %d symbols on %s timeframe...\n", len(symbols), interval)
+	}
 
 	var wg sync.WaitGroup
 	resultsChan := make(chan MultiSymbolResult, len(symbols))
@@ -206,101 +210,126 @@ func RunMultiSymbolAnalysis(symbols []string, interval string, limit int) []Mult
 	var results []MultiSymbolResult
 	completed := 0
 
-	fmt.Println("Progress:")
+	if VERBOSE_MODE {
+		fmt.Println("Progress:")
+	}
+	
 	for result := range resultsChan {
 		results = append(results, result)
 		completed++
 
-		status := "✅"
-		if result.Error != nil {
-			status = "❌"
-		}
+		if VERBOSE_MODE {
+			status := "✅"
+			if result.Error != nil {
+				status = "❌"
+			}
 
-		signal := " "
-		if result.HasSignal {
-			signal = "🔔"
-		}
+			signal := " "
+			if result.HasSignal {
+				signal = "🔔"
+			}
 
-		fmt.Printf("\r[%d/%d] %s %s %s - RSI: %.2f, Div: %d, S/R: %d (%.2fs)   ",
-			completed, len(symbols), status, signal, result.Symbol,
-			result.CurrentRSI, result.Divergences, result.SRZones, result.Duration.Seconds())
+			fmt.Printf("\r[%d/%d] %s %s %s - RSI: %.2f, Div: %d, S/R: %d (%.2fs)   ",
+				completed, len(symbols), status, signal, result.Symbol,
+				result.CurrentRSI, result.Divergences, result.SRZones, result.Duration.Seconds())
+		} else {
+			// Quiet mode: just show progress percentage
+			progress := (completed * 100) / len(symbols)
+			fmt.Printf("\rProgress: %d%% (%d/%d)   ", progress, completed, len(symbols))
+		}
 	}
 
 	totalDuration := time.Since(startTime)
 
-	fmt.Printf("\n\n⚡ Completed in %.2f seconds\n", totalDuration.Seconds())
-	fmt.Printf("📊 Average per symbol: %.2f seconds\n", totalDuration.Seconds()/float64(len(symbols)))
+	if VERBOSE_MODE {
+		fmt.Printf("\n\n⚡ Completed in %.2f seconds\n", totalDuration.Seconds())
+		fmt.Printf("📊 Average per symbol: %.2f seconds\n", totalDuration.Seconds()/float64(len(symbols)))
+	} else {
+		fmt.Printf("\n✅ Analysis complete (%.1fs)\n", totalDuration.Seconds())
+	}
 
 	return results
 }
 
 // PrintMultiSymbolResults displays analysis results and highlights signals
 func PrintMultiSymbolResults(results []MultiSymbolResult) {
-	fmt.Println("\n════════════════════════════════════════")
-	fmt.Println("🎯 SYMBOLS WITH TRADE SIGNALS")
-	fmt.Println("════════════════════════════════════════")
+	if VERBOSE_MODE {
+		fmt.Println("\n════════════════════════════════════════")
+		fmt.Println("🎯 SYMBOLS WITH TRADE SIGNALS")
+		fmt.Println("════════════════════════════════════════")
+	} else {
+		fmt.Println("\n🎯 Trade Signals Found:")
+	}
 
 	signalCount := 0
 	for _, r := range results {
 		if r.HasSignal {
 			signalCount++
-			fmt.Printf("\n🔔 %s\n", r.Symbol)
-			fmt.Printf("   📊 RSI: %.2f (Overbought)\n", r.CurrentRSI)
-			fmt.Printf("   📈 Divergences: %d\n", r.Divergences)
-			fmt.Printf("   🎯 S/R Zones: %d\n", r.SRZones)
-			fmt.Printf("   📉 Signal: %s\n", r.SignalType)
-		}
-	}
-
-	if signalCount == 0 {
-		fmt.Println("\n⚠️  No trading signals found")
-	} else {
-		fmt.Printf("\n✅ Found signals in %d/%d symbols\n", signalCount, len(results))
-	}
-
-	// Show errors if any
-	errorCount := 0
-	for _, r := range results {
-		if r.Error != nil {
-			errorCount++
-		}
-	}
-
-	if errorCount > 0 {
-		fmt.Printf("\n⚠️  %d symbols had errors (API limits or data issues)\n", errorCount)
-	}
-
-	// Top RSI symbols
-	fmt.Println("\n════════════════════════════════════════")
-	fmt.Println("📊 TOP 10 OVERBOUGHT SYMBOLS (RSI > 60)")
-	fmt.Println("════════════════════════════════════════")
-
-	// Sort by RSI
-	sortedByRSI := make([]MultiSymbolResult, len(results))
-	copy(sortedByRSI, results)
-
-	for i := 0; i < len(sortedByRSI)-1; i++ {
-		for j := i + 1; j < len(sortedByRSI); j++ {
-			if sortedByRSI[j].CurrentRSI > sortedByRSI[i].CurrentRSI {
-				sortedByRSI[i], sortedByRSI[j] = sortedByRSI[j], sortedByRSI[i]
+			if VERBOSE_MODE {
+				fmt.Printf("\n🔔 %s\n", r.Symbol)
+				fmt.Printf("   📊 RSI: %.2f (Overbought)\n", r.CurrentRSI)
+				fmt.Printf("   📈 Divergences: %d\n", r.Divergences)
+				fmt.Printf("   🎯 S/R Zones: %d\n", r.SRZones)
+				fmt.Printf("   📉 Signal: %s\n", r.SignalType)
+			} else {
+				fmt.Printf("   🔔 %s (%s signal, RSI: %.1f)\n", r.Symbol, r.SignalType, r.CurrentRSI)
 			}
 		}
 	}
 
-	count := 0
-	for _, r := range sortedByRSI {
-		if r.CurrentRSI > 60 && r.Error == nil && count < 10 {
-			fmt.Printf("  %s: RSI %.2f (Div: %d, S/R: %d)\n",
-				r.Symbol, r.CurrentRSI, r.Divergences, r.SRZones)
-			count++
+	if signalCount == 0 {
+		fmt.Println("   ⚠️  No signals detected")
+	} else if !VERBOSE_MODE {
+		fmt.Printf("\n✅ %d/%d symbols have signals\n", signalCount, len(results))
+	} else {
+		fmt.Printf("\n✅ Found signals in %d/%d symbols\n", signalCount, len(results))
+	}
+
+	// Show errors if any (only in verbose mode)
+	if VERBOSE_MODE {
+		errorCount := 0
+		for _, r := range results {
+			if r.Error != nil {
+				errorCount++
+			}
 		}
-	}
 
-	if count == 0 {
-		fmt.Println("  No symbols with RSI > 60")
-	}
+		if errorCount > 0 {
+			fmt.Printf("\n⚠️  %d symbols had errors (API limits or data issues)\n", errorCount)
+		}
 
-	fmt.Println("════════════════════════════════════════")
+		// Top RSI symbols
+		fmt.Println("\n════════════════════════════════════════")
+		fmt.Println("📊 TOP 10 OVERBOUGHT SYMBOLS (RSI > 60)")
+		fmt.Println("════════════════════════════════════════")
+
+		// Sort by RSI
+		sortedByRSI := make([]MultiSymbolResult, len(results))
+		copy(sortedByRSI, results)
+
+		for i := 0; i < len(sortedByRSI)-1; i++ {
+			for j := i + 1; j < len(sortedByRSI); j++ {
+				if sortedByRSI[j].CurrentRSI > sortedByRSI[i].CurrentRSI {
+					sortedByRSI[i], sortedByRSI[j] = sortedByRSI[j], sortedByRSI[i]
+				}
+			}
+		}
+
+		count := 0
+		for _, r := range sortedByRSI {
+			if r.CurrentRSI > 60 && r.Error == nil && count < 10 {
+				fmt.Printf("  %s: RSI %.2f (Div: %d, S/R: %d)\n",
+					r.Symbol, r.CurrentRSI, r.Divergences, r.SRZones)
+				count++
+			}
+		}
+
+		if count == 0 {
+			fmt.Println("  No symbols with RSI > 60")
+		}
+
+		fmt.Println("════════════════════════════════════════")
+	}
 }
 
 // RunMultiSymbolLiveMode continuously monitors multiple symbols
