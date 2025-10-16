@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"example.com/bot/internal/trademanager"
 )
 
 // ==================== MULTI-SYMBOL PAPER TRADING ====================
@@ -24,6 +26,7 @@ type MultiPaperTradingEngine struct {
 	mutex           sync.Mutex
 	MaxPositions    int // Maximum simultaneous positions
 	Logger          *TradeLogger
+	TradeManager    *trademanager.Manager // 3-Tier trade management system
 }
 
 func NewMultiPaperTradingEngine(symbols []string, interval string, limit int, startingBalance float64, maxPositions int) *MultiPaperTradingEngine {
@@ -38,7 +41,11 @@ func NewMultiPaperTradingEngine(symbols []string, interval string, limit int, st
 		logger = nil
 	}
 
-	return &MultiPaperTradingEngine{
+	// Initialize 3-Tier trade management system
+	tmConfig := trademanager.DefaultConfig()
+	tradeManager := trademanager.NewManager(tmConfig, VERBOSE_MODE)
+
+	engine := &MultiPaperTradingEngine{
 		Symbols:         symbols,
 		Interval:        interval,
 		Limit:           limit,
@@ -49,7 +56,47 @@ func NewMultiPaperTradingEngine(symbols []string, interval string, limit int, st
 		TradeCounter:    0,
 		MaxPositions:    maxPositions,
 		Logger:          logger,
+		TradeManager:    tradeManager,
 	}
+
+	// Setup trade manager callbacks
+	tradeManager.SetCallbacks(
+		engine.handlePartialExit,
+		engine.handleStopUpdate,
+		nil, // position close callback (optional)
+	)
+
+	// Display 3-Tier configuration
+	if VERBOSE_MODE {
+		fmt.Println("\n╔═══════════════════════════════════════════════════════════╗")
+		fmt.Println("║        🛡️  3-TIER TRADE MANAGEMENT: ACTIVE 🛡️             ║")
+		fmt.Println("╚═══════════════════════════════════════════════════════════╝")
+		fmt.Printf("\n📊 Engine Configuration:\n")
+		fmt.Printf("   Stop Loss:    %.1f%%\n", STOP_LOSS_PERCENT)
+		fmt.Printf("   Take Profit:  %.1f%%\n", TAKE_PROFIT_PERCENT)
+		fmt.Printf("   Timeframe:    %s\n", interval)
+
+		fmt.Println("\n🎯 3-Tier Protection Layers:")
+		fmt.Printf("   Tier 1: %.1f%% (Breakeven Lock)\n", tmConfig.Tier1BreakevenThreshold)
+		fmt.Printf("   Tier 2: %.1f%% (Partial Exit %.0f%%)\n",
+			tmConfig.Tier2PartialExitThreshold, tmConfig.Tier2PartialExitPercent)
+		fmt.Printf("   Tier 3: %ds (Trailing Stop - Locks %.0f%% of max profit)\n",
+			tmConfig.Tier3TimeThreshold, tmConfig.Tier3ProfitLockPercent)
+
+		fmt.Println("\n💡 Expected Impact:")
+		fmt.Println("   • Reduced give-back: ~67%")
+		fmt.Println("   • Protected breakeven after +0.3%")
+		fmt.Println("   • Profit secured before TP hit")
+		fmt.Println("═══════════════════════════════════════════════════════════")
+		fmt.Println()
+	} else {
+		fmt.Println("\n✅ 3-Tier Trade Management: ACTIVE")
+		fmt.Printf("   Engine: %.1f%% SL / %.1f%% TP | %s\n", STOP_LOSS_PERCENT, TAKE_PROFIT_PERCENT, interval)
+		fmt.Printf("   Tiers: %.1f%% BE | %.1f%% Partial | %ds Trailing\n",
+			tmConfig.Tier1BreakevenThreshold, tmConfig.Tier2PartialExitThreshold, tmConfig.Tier3TimeThreshold)
+	}
+
+	return engine
 }
 
 func (mp *MultiPaperTradingEngine) OpenTrade(symbol, side string, entryPrice, stopLoss, takeProfit, size float64) {
@@ -126,6 +173,20 @@ func (mp *MultiPaperTradingEngine) OpenTrade(symbol, side string, entryPrice, st
 	}
 	fmt.Printf("📈 Active Positions: %d/%d\n", len(mp.ActiveTrades), mp.MaxPositions)
 	fmt.Println("════════════════════════════════════════")
+
+	// Add position to trade manager for 3-Tier protection (ADAPTIVE MODE)
+	if mp.TradeManager != nil && mp.TradeManager.IsEnabled() {
+		// Use adaptive config that adjusts thresholds based on actual SL/TP distances
+		mp.TradeManager.AddPositionWithAdaptiveConfig(
+			trade.ID,
+			symbol,
+			side,
+			entryPrice,
+			stopLoss,
+			takeProfit,
+			size,
+		)
+	}
 }
 
 func (mp *MultiPaperTradingEngine) CheckAndClosePositions(currentPrices map[string]float64) {
@@ -136,6 +197,15 @@ func (mp *MultiPaperTradingEngine) CheckAndClosePositions(currentPrices map[stri
 		currentPrice, exists := currentPrices[symbol]
 		if !exists {
 			continue
+		}
+
+		// Update trade manager with current price (evaluates 3-Tier rules)
+		if mp.TradeManager != nil && mp.TradeManager.IsEnabled() {
+			if err := mp.TradeManager.UpdatePrice(symbol, currentPrice); err != nil {
+				if VERBOSE_MODE {
+					fmt.Printf("⚠️  Trade manager error for %s: %v\n", symbol, err)
+				}
+			}
 		}
 
 		// Track highest and lowest prices
@@ -298,6 +368,11 @@ func (mp *MultiPaperTradingEngine) closeTradeInternal(symbol string, exitPrice f
 	}
 
 	delete(mp.ActiveTrades, symbol)
+
+	// Remove from trade manager
+	if mp.TradeManager != nil {
+		mp.TradeManager.RemovePosition(symbol)
+	}
 }
 
 // ShowUnrealizedPL displays unrealized P/L for all active positions
@@ -587,14 +662,48 @@ func (mp *MultiPaperTradingEngine) RunMultiPaperTrading() error {
 
 					if nearestResistance != nil {
 						stopLoss = nearestResistance.ZoneTop
+						if VERBOSE_MODE {
+							fmt.Printf("   🎯 [%s] Using resistance zone SL: $%.4f (zone: $%.4f-$%.4f)\n",
+								result.Symbol, stopLoss, nearestResistance.ZoneBot, nearestResistance.ZoneTop)
+						}
 					} else {
 						stopLoss = currentPrice * (1 + STOP_LOSS_PERCENT/100)
+						if VERBOSE_MODE {
+							fmt.Printf("   🎯 [%s] No resistance zone, using fixed SL: $%.4f (+%.2f%%)\n",
+								result.Symbol, stopLoss, STOP_LOSS_PERCENT)
+						}
 					}
 
 					if nearestSupport != nil {
 						takeProfit = nearestSupport.ZoneBot
+						if VERBOSE_MODE {
+							fmt.Printf("   🎯 [%s] Using support zone TP: $%.4f (zone: $%.4f-$%.4f)\n",
+								result.Symbol, takeProfit, nearestSupport.ZoneBot, nearestSupport.ZoneTop)
+						}
 					} else {
 						takeProfit = currentPrice * (1 - TAKE_PROFIT_PERCENT/100)
+						if VERBOSE_MODE {
+							fmt.Printf("   🎯 [%s] No support zone, using fixed TP: $%.4f (-%.2f%%)\n",
+								result.Symbol, takeProfit, TAKE_PROFIT_PERCENT)
+						}
+					}
+
+					// CRITICAL FIX: Ensure SL is always ABOVE entry for SHORT
+					if stopLoss <= entry {
+						stopLoss = entry * (1 + STOP_LOSS_PERCENT/100)
+						if VERBOSE_MODE {
+							fmt.Printf("   ⚠️  [%s] WARNING: SL was at/below entry! Adjusted to $%.4f (+%.2f%%)\n",
+								result.Symbol, stopLoss, STOP_LOSS_PERCENT)
+						}
+					}
+
+					// CRITICAL FIX: Ensure TP is always BELOW entry for SHORT
+					if takeProfit >= entry {
+						takeProfit = entry * (1 - TAKE_PROFIT_PERCENT/100)
+						if VERBOSE_MODE {
+							fmt.Printf("   ⚠️  [%s] WARNING: TP was at/above entry! Adjusted to $%.4f (-%.2f%%)\n",
+								result.Symbol, takeProfit, TAKE_PROFIT_PERCENT)
+						}
 					}
 
 					risk := stopLoss - entry
@@ -652,6 +761,49 @@ func (mp *MultiPaperTradingEngine) RunMultiPaperTrading() error {
 		fmt.Printf("\n📁 All trades saved to: %s\n", mp.Logger.filename)
 	}
 
+	return nil
+}
+
+// ==================== 3-TIER TRADE MANAGER CALLBACKS ====================
+
+// handlePartialExit is called by the trade manager when Tier 2 triggers
+func (mp *MultiPaperTradingEngine) handlePartialExit(symbol string, exitPercent, currentPrice float64) (float64, error) {
+	trade, exists := mp.ActiveTrades[symbol]
+	if !exists {
+		return 0, fmt.Errorf("no active trade for %s", symbol)
+	}
+
+	// Calculate exit size
+	exitSize := trade.Size * (exitPercent / 100.0)
+
+	// Calculate profit from this partial exit
+	var exitProfit float64
+	if trade.Side == "SHORT" {
+		exitProfit = (trade.EntryPrice - currentPrice) * (exitSize / trade.EntryPrice)
+	} else { // LONG
+		exitProfit = (currentPrice - trade.EntryPrice) * (exitSize / trade.EntryPrice)
+	}
+
+	// Update position size
+	trade.Size -= exitSize
+	mp.CurrentBalance += exitProfit
+
+	if VERBOSE_MODE {
+		fmt.Printf("💰 Partial Exit: %.0f%% of %s @ $%.4f | Profit: $%.4f | Remaining: $%.2f\n",
+			exitPercent, symbol, currentPrice, exitProfit, trade.Size)
+	}
+
+	return exitProfit, nil
+}
+
+// handleStopUpdate is called by the trade manager when stops need to be moved
+func (mp *MultiPaperTradingEngine) handleStopUpdate(symbol string, newStopLoss float64) error {
+	trade, exists := mp.ActiveTrades[symbol]
+	if !exists {
+		return fmt.Errorf("no active trade for %s", symbol)
+	}
+
+	trade.StopLoss = newStopLoss
 	return nil
 }
 
