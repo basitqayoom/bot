@@ -90,7 +90,7 @@ func NewTradeLogger(symbol string) (*TradeLogger, error) {
 // NewMultiTradeLogger creates a logger for multi-symbol paper trading
 // Appends all trades to a single trades_all_symbols.csv file
 func NewMultiTradeLogger() (*TradeLogger, error) {
-	logsDir := "trade_logs"
+	logsDir := "./logs/trade_logs"
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create logs directory: %w", err)
 	}

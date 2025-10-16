@@ -42,9 +42,27 @@ func main() {
 			}
 		}
 
+		// Open the file fresh on each request to get the latest content
+		f, err := os.Open(absPath)
+		if err != nil {
+			http.Error(w, "Failed to open CSV file", http.StatusInternalServerError)
+			log.Printf("Error opening file: %v", err)
+			return
+		}
+		defer f.Close()
+
+		stat, err := f.Stat()
+		if err != nil {
+			http.Error(w, "Failed to read file info", http.StatusInternalServerError)
+			log.Printf("Error stating file: %v", err)
+			return
+		}
+
 		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 		w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%q", filepath.Base(absPath)))
-		http.ServeFile(w, r, absPath)
+
+		// Use ServeContent which properly handles the file descriptor
+		http.ServeContent(w, r, filepath.Base(absPath), stat.ModTime(), f)
 	})
 
 	// Simple index to help discover the route.
